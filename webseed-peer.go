@@ -64,6 +64,11 @@ func (ws *webseedPeer) request(r Request) bool {
 }
 
 func (ws *webseedPeer) doRequest(r Request) {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Print(`[addWebSeed] recover err:%v`, err)
+		}
+	}()
 	webseedRequest := ws.client.NewRequest(ws.intoSpec(r))
 	ws.activeRequests[r] = webseedRequest
 	func() {
