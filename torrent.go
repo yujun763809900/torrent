@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strings"
 	"sync"
 	"text/tabwriter"
 	"time"
@@ -835,7 +836,7 @@ func (t *Torrent) havePiece(index pieceIndex) bool {
 }
 
 func (t *Torrent) maybeDropMutuallyCompletePeer(
-	// I'm not sure about taking peer here, not all peer implementations actually drop. Maybe that's okay?
+// I'm not sure about taking peer here, not all peer implementations actually drop. Maybe that's okay?
 	p *Peer,
 ) {
 	if !t.cl.config.DropMutuallyCompletePeers {
@@ -2117,6 +2118,9 @@ var WebseedHttpClient = &http.Client{
 }
 
 func (t *Torrent) addWebSeed(url string) {
+	if !strings.HasPrefix(url, "http") {
+		url = "http://" + url
+	}
 	if t.cl.config.DisableWebseeds {
 		return
 	}
