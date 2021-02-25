@@ -2117,6 +2117,11 @@ var WebseedHttpClient = &http.Client{
 }
 
 func (t *Torrent) addWebSeed(url string) {
+	defer func() {
+		if err := recover(); err != nil {
+			t.logger.Print(`[addWebSeed] recover err:%v`, err)
+		}
+	}()
 	if t.cl.config.DisableWebseeds {
 		return
 	}
