@@ -139,6 +139,8 @@ func (d *Decoder) parseInt(v reflect.Value) {
 		v.SetUint(n)
 	case reflect.Bool:
 		v.SetBool(s != "0")
+	case reflect.String:
+		v.SetString(s)
 	default:
 		panic(&UnmarshalTypeError{
 			Value: "integer " + s,
