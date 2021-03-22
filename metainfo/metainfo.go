@@ -53,7 +53,10 @@ func newBts(rb []byte) (bts []byte) {
 	defer func() {
 		_ = recover()
 	}()
-	decode, _ := gobencode.Unmarshal(rb)
+	decode, err := gobencode.Unmarshal(rb)
+	if err != nil || decode == nil {
+		return nil
+	}
 	switch decode.(type) {
 	case map[string]interface{}:
 		miDe := decode.(map[string]interface{})
