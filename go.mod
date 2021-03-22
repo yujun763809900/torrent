@@ -3,6 +3,7 @@ module github.com/anacrolix/torrent
 require (
 	bazil.org/fuse v0.0.0-20200407214033-5883e5a4b512
 	crawshaw.io/sqlite v0.3.3-0.20210127221821-98b1f83c5508
+	github.com/IncSW/go-bencode v0.1.2
 	github.com/alexflint/go-arg v1.3.0
 	github.com/anacrolix/dht/v2 v2.8.1-0.20210311003418-13622df072ae
 	github.com/anacrolix/envpprof v1.1.1

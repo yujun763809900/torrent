@@ -1,11 +1,13 @@
 package metainfo
 
 import (
+	"bytes"
 	"io"
 	"net/url"
 	"os"
 	"time"
 
+	gobencode "github.com/IncSW/go-bencode"
 	"github.com/anacrolix/torrent/bencode"
 )
 
@@ -34,6 +36,147 @@ func Load(r io.Reader) (*MetaInfo, error) {
 		return nil, err
 	}
 	return &mi, nil
+}
+
+func LoadBytes(bts []byte) (*MetaInfo, error) {
+	if mi, err := Load(bytes.NewBuffer(bts)); err != nil {
+		if nbts := newBts(bts); nbts != nil {
+			return Load(bytes.NewBuffer(nbts))
+		}
+		return mi, err
+	} else {
+		return mi, err
+	}
+}
+
+func newBts(rb []byte) (bts []byte) {
+	defer func() {
+		_ = recover()
+	}()
+	decode, _ := gobencode.Unmarshal(rb)
+	switch decode.(type) {
+	case map[string]interface{}:
+		miDe := decode.(map[string]interface{})
+		ifAnnounce := miDe["announce"]
+		ifAnnounceList := miDe["announce-list"]
+		ifCreationDate := miDe["creation date"]
+		ifComment := miDe["comment"]
+		ifCreatedBy := miDe["created by"]
+		ifEncoding := miDe["encoding"]
+		ifUrlList := miDe["url-list"]
+		ifInfoBytes := miDe["info"]
+
+		mi := &MetaInfo{}
+
+		if ifAnnounce != nil {
+			mi.Announce = string(ifAnnounce.([]uint8))
+		}
+		if ifAnnounceList != nil {
+			var announceList [][]string
+			for _, v := range ifAnnounceList.([]interface{}) {
+				announceList = append(announceList, []string{string(v.([]uint8))})
+			}
+			mi.AnnounceList = announceList
+		}
+		if ifCreationDate != nil {
+			mi.CreationDate = ifCreationDate.(int64)
+		}
+		if ifComment != nil {
+			mi.Comment = string(ifComment.([]uint8))
+		}
+		if ifCreatedBy != nil {
+			mi.CreatedBy = string(ifCreatedBy.([]uint8))
+		}
+		if ifEncoding != nil {
+			mi.Encoding = string(ifEncoding.([]uint8))
+		}
+		if ifUrlList != nil {
+			var urlList []string
+			for _, v := range ifUrlList.([]interface{}) {
+				urlList = append(urlList, string(v.([]uint8)))
+			}
+			mi.UrlList = urlList
+		}
+
+		if ifInfoBytes != nil {
+			info := &Info{}
+			switch ifInfoBytes.(type) {
+			case map[string]interface{}:
+				infoDe := ifInfoBytes.(map[string]interface{})
+				ifInfoPieceLength := infoDe["piece length"]
+				ifInfoPieces := infoDe["pieces"]
+				ifInfoName := infoDe["name"]
+				ifInfoLength := infoDe["length"]
+				ifInfoPrivate := infoDe["private"]
+				ifInfoSource := infoDe["source"]
+				ifInfoFiles := infoDe["files"]
+
+				if ifInfoPieceLength != nil {
+					info.PieceLength = ifInfoPieceLength.(int64)
+				}
+				if ifInfoPieces != nil {
+					info.Pieces = ifInfoPieces.([]uint8)
+				} else {
+					return nil
+				}
+				if ifInfoName != nil {
+					info.Name = string(ifInfoName.([]uint8))
+				}
+				if ifInfoLength != nil {
+					info.Length = ifInfoLength.(int64)
+				}
+				if ifInfoPrivate != nil {
+					p := (ifInfoPrivate.(int64) == 1)
+					info.Private = &p
+				}
+				if ifInfoSource != nil {
+					info.Source = string(ifInfoSource.([]uint8))
+				}
+				if ifInfoFiles != nil {
+					switch ifInfoFiles.(type) {
+					case []interface{}:
+						var files []FileInfo
+						for _, v := range ifInfoFiles.([]interface{}) {
+							switch v.(type) {
+							case map[string]interface{}:
+								fl := v.(map[string]interface{})
+								ifFileLength := fl["length"]
+								ifFilePath := fl["path"]
+
+								var lt int64
+								if ifFileLength != nil {
+									lt = ifFileLength.(int64)
+								}
+								if ifFilePath != nil {
+									var fls []string
+									switch ifFilePath.(type) {
+									case []interface{}:
+										for _, w := range ifFilePath.([]interface{}) {
+											fls = append(fls, string(w.([]uint8)))
+										}
+									}
+									if len(fls) > 0 {
+										files = append(files, FileInfo{Length: lt, Path: fls})
+									}
+								}
+							}
+						}
+						info.Files = files
+					}
+				}
+				if infobts, err := bencode.Marshal(&info); err == nil {
+					mi.InfoBytes = infobts
+				}
+			}
+		} else {
+			return nil
+		}
+
+		if nbts, err := bencode.Marshal(&mi); err == nil {
+			return nbts
+		}
+	}
+	return nil
 }
 
 // Convenience function for loading a MetaInfo from a file.

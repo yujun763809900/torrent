@@ -207,6 +207,7 @@ func (d *Decoder) parseString(v reflect.Value) error {
 
 // Info for parsing a dict value.
 type dictField struct {
+	Key   string
 	Value reflect.Value // Storage for the parsed value.
 	// True if field value should be parsed into Value. If false, the value
 	// should be parsed and discarded.
@@ -245,6 +246,7 @@ func getDictField(dict reflect.Value, key string) dictField {
 			})
 		}
 		return dictField{
+			Key:                      key,
 			Value:                    dict.FieldByIndex(sf.r.Index),
 			Ok:                       true,
 			Set:                      func() {},
